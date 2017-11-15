@@ -1,4 +1,5 @@
 import time
+import pygame
 
 SIZE = 8
 
@@ -164,6 +165,10 @@ class Reversi:
         return "".join("".join(map(str, row)) for row in self.board) + str(self.player)
 
 
+def draw_board(board):
+    pygame.display.set_mode((800, 800))
+
+
 def main():
     state = Reversi(board=[
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -240,4 +245,5 @@ def pick_move(start):
 
 
 if __name__ == '__main__':
-    main()
+    pass
+    # main()
