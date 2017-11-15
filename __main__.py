@@ -1,5 +1,5 @@
 import time
-import pygame
+from Tkinter import Tk, Canvas, BOTH
 
 SIZE = 8
 
@@ -7,10 +7,10 @@ BLANK = 0
 WHITE = 1
 BLACK = 2
 
-TIME_LIMIT = 20  # seconds
+TIME_LIMIT = 5  # seconds
 
 
-class Reversi:
+class Reversi(object):
     def __init__(self, board=None, player=None, discs=None):
         self.board = Reversi.gen_board() if board is None else board
         self.player = WHITE if player is None else player
@@ -62,28 +62,32 @@ class Reversi:
                        - sum(
             1 if self.board[i][j] == Reversi.opposite(self.player) else 0 for i in (0, SIZE - 1) for j in
             (0, SIZE - 1))  # TODO: Fix!!!
-        return corner_count * 10 + moves_count + disc_count / 10
+        return corner_count * 10 + moves_count + disc_count / 10.0
 
     def get_move_spaces(self, player=None):
         board = self.board
         player = self.player if player is None else player
 
-        yield from (Reversi.get_move_spaces_worker(board, player))
-        yield from ((j, i) for i, j in
+        for i in (Reversi.get_move_spaces_worker(board, player)):
+            yield i
+        for i in ((j, i) for i, j in
                   Reversi.get_move_spaces_worker(((board[row][col] for row in range(SIZE)) for col in range(SIZE)),
-                                                 player))
-        yield from ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
+                                                 player)):
+            yield i
+        for i in ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
                   for delta, index in
                   Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][max(0, delta) + index]
                                                    for index in range(SIZE - abs(delta)))
                                                   for delta in range(1 - SIZE, SIZE)
-                                                  ), player))
-        yield from ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
+                                                  ), player)):
+            yield i
+        for i in ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
                   for delta, index in
                   Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][SIZE - 1 - max(0, delta) - index]
                                                    for index in range(SIZE - abs(delta)))
                                                   for delta in range(1 - SIZE, SIZE)
-                                                  ), player))
+                                                  ), player)):
+            yield i
 
     @staticmethod
     def print_board(board):
@@ -148,10 +152,6 @@ class Reversi:
         return "".join("".join(map(str, row)) for row in self.board) + str(self.player)
 
 
-def draw_board(board):
-    pygame.display.set_mode((800, 800))
-
-
 def main():
     state = Reversi(board=[
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -172,17 +172,44 @@ def main():
     # print(computer_move)
     # print(state)
 
-    while True:
-        try:
-            x, y = map(int, input().split())
-            state.execute((x, y))
-            print(state)
-            computer_move = pick_move(state)
-            state.execute(computer_move)
-            print(computer_move)
-            print(state)
-        except KeyboardInterrupt as e:
-            break
+    root = Tk()
+    canvas = Canvas(root, bg="grey", width=800, height=800)
+    canvas.pack()
+    for i in range(8):
+        canvas.create_line(0, 100 * i, 800, 100 * i, fill="black")
+        canvas.create_line(100 * i, 0, 100 * i, 800, fill="black")
+
+    canvas.pack()
+
+    def mouse_callback(event):
+        row = event.y / 100
+        column = event.x / 100
+        state.execute((row, column))
+        display(state)
+        canvas.create_text(400, 400, text="WAIT", fill="red", font=("Calibri", "250"), tags="text")
+        root.update()
+        computer_move = pick_move(state)
+        state.execute(computer_move)
+        display(state)
+        print(state)
+
+    def display(state):
+        canvas.delete("circles")
+        canvas.delete("text")
+        for i, row in enumerate(state.board):
+            for j, val in enumerate(row):
+                if val == 0:
+                    spaces = set(state.get_move_spaces())
+                    if (i, j) in spaces:
+                        canvas.create_oval(j * 100, i * 100, j * 100 + 100, i * 100 + 100,
+                                           dash=(10, 10), tags="circles")
+                else:
+                    canvas.create_oval(j * 100, i * 100, j * 100 + 100, i * 100 + 100,
+                                       fill="black" if val == 2 else "white", tags="circles")
+
+    canvas.bind("<Button-1>", mouse_callback)
+    display(state)
+    root.mainloop()
 
 
 def alpha_beta(start, depth, alpha, beta, start_time,
@@ -213,21 +240,20 @@ def alpha_beta(start, depth, alpha, beta, start_time,
 
 def pick_move(start):
     moves = dict((move, float("-inf")) for move in start.get_move_spaces())
+    if not moves:
+        return None
     start_time = time.time()
     depth = 3
     cache = {}
     while start_time + TIME_LIMIT > time.time():
-        print(depth)
         out = alpha_beta(start, depth, float("-inf"), float("inf"), start_time)
         if not out[2]:
             cache = out[1]
         depth += 1
     print(len(cache))
-    print(min([cache[start.copy().execute(x).hash()] for x in moves]))
     print(cache[start.hash()])
     return min(moves, key=lambda x: cache[start.copy().execute(x).hash()])
 
 
 if __name__ == '__main__':
-    pass
-    # main()
+    main()
