@@ -11,7 +11,7 @@ TIME_LIMIT = 20  # seconds
 
 
 class Reversi:
-    def __init__(self, board=None, *, player=None, discs=None):
+    def __init__(self, board=None, player=None, discs=None):
         self.board = Reversi.gen_board() if board is None else board
         self.player = WHITE if player is None else player
         self.discs = [sum(self.board[i][j] == k for i in range(SIZE) for j in range(SIZE))
@@ -40,7 +40,6 @@ class Reversi:
                         pos = (pos[0] + x_delta, pos[1] + y_delta)
                     if all(0 <= i < SIZE for i in pos) and self.board[pos[0]][pos[1]] == self.player:
                         for coord in to_change:
-
                             self.board[coord[0]][coord[1]] = self.player
                             self.discs[self.player] += 1
                             self.discs[Reversi.opposite(self.player)] -= 1
@@ -51,9 +50,10 @@ class Reversi:
         return self
 
     def evaluate(self):
-        assert sum(self.discs) == SIZE**2
+        assert sum(self.discs) == SIZE ** 2
         if self.discs[BLANK] == 0:
-            return float("inf") if self.discs[self.player] >= self.discs[Reversi.opposite(self.player)] else float("-inf")
+            return float("inf") if self.discs[self.player] >= self.discs[Reversi.opposite(self.player)] else float(
+                "-inf")
 
         disc_count = self.discs[self.player] - self.discs[Reversi.opposite(self.player)]
         moves_count = len(set(self.get_move_spaces())) - len(
@@ -68,39 +68,26 @@ class Reversi:
         board = self.board
         player = self.player if player is None else player
 
-        yield from (Reversi.get_move_spaces_worker(board, player))
-        yield from ((j, i) for i, j in
-                    Reversi.get_move_spaces_worker(((board[row][col] for row in range(SIZE)) for col in range(SIZE)),
-                                                   player))
-        yield from ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
-                    for delta, index in
-                    Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][max(0, delta) + index]
-                                                     for index in range(SIZE - abs(delta)))
-                                                    for delta in range(1 - SIZE, SIZE)
-                                                    ), player))
-        yield from ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
-                    for delta, index in
-                    Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][SIZE - 1 - max(0, delta) - index]
-                                                     for index in range(SIZE - abs(delta)))
-                                                    for delta in range(1 - SIZE, SIZE)
-                                                    ), player))
-
-    @staticmethod
-    def test_ret_all(rows, val):
-        for row_index, row in enumerate(rows):
-            for col_index, val in enumerate(row):
-                print(val, end=" ")
-                yield (row_index, col_index)
-            print()
-
-    @staticmethod
-    def test_display(points):
-        board = Reversi.gen_board()
-        for x, y in points:
-            board[x][y] = "H" if board[x][y] != "H" else "X"
-            # print(x, y)
-        print(Reversi.print_board(board))
-        print()
+        for i in (Reversi.get_move_spaces_worker(board, player)):
+            yield i
+        for i in ((j, i) for i, j in
+                  Reversi.get_move_spaces_worker(((board[row][col] for row in range(SIZE)) for col in range(SIZE)),
+                                                 player)):
+            yield i
+        for i in ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
+                  for delta, index in
+                  Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][max(0, delta) + index]
+                                                   for index in range(SIZE - abs(delta)))
+                                                  for delta in range(1 - SIZE, SIZE)
+                                                  ), player)):
+            yield i
+        for i in ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
+                  for delta, index in
+                  Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][SIZE - 1 - max(0, delta) - index]
+                                                   for index in range(SIZE - abs(delta)))
+                                                  for delta in range(1 - SIZE, SIZE)
+                                                  ), player)):
+            yield i
 
     @staticmethod
     def print_board(board):
@@ -202,7 +189,8 @@ def main():
             break
 
 
-def alpha_beta(start, depth, alpha, beta, start_time, cache={}):  # Outputs estimated "value" of state for the next player to move
+def alpha_beta(start, depth, alpha, beta, start_time,
+               cache={}):  # Outputs estimated "value" of state for the next player to move
     if start_time + TIME_LIMIT < time.time():
         return None, None, True
     moves = list(start.get_move_spaces())
