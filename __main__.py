@@ -68,26 +68,22 @@ class Reversi:
         board = self.board
         player = self.player if player is None else player
 
-        for i in (Reversi.get_move_spaces_worker(board, player)):
-            yield i
-        for i in ((j, i) for i, j in
+        yield from (Reversi.get_move_spaces_worker(board, player))
+        yield from ((j, i) for i, j in
                   Reversi.get_move_spaces_worker(((board[row][col] for row in range(SIZE)) for col in range(SIZE)),
-                                                 player)):
-            yield i
-        for i in ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
+                                                 player))
+        yield from ((max(0, SIZE - 1 - delta) + index, max(0, 1 - SIZE + delta) + index)
                   for delta, index in
                   Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][max(0, delta) + index]
                                                    for index in range(SIZE - abs(delta)))
                                                   for delta in range(1 - SIZE, SIZE)
-                                                  ), player)):
-            yield i
-        for i in ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
+                                                  ), player))
+        yield from ((max(0, SIZE - 1 - delta) + index, SIZE - 1 - max(0, 1 - SIZE + delta) - index)
                   for delta, index in
                   Reversi.get_move_spaces_worker(((board[max(0, -delta) + index][SIZE - 1 - max(0, delta) - index]
                                                    for index in range(SIZE - abs(delta)))
                                                   for delta in range(1 - SIZE, SIZE)
-                                                  ), player)):
-            yield i
+                                                  ), player))
 
     @staticmethod
     def print_board(board):
