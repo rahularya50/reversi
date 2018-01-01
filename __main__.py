@@ -1,13 +1,17 @@
 import time
 from Tkinter import Tk, Canvas, BOTH
 
+import math
+
 SIZE = 8
 
 BLANK = 0
 WHITE = 1
 BLACK = 2
 
-TIME_LIMIT = 5  # seconds
+RES = 800
+
+TIME_LIMIT = 1  # seconds
 
 
 class Reversi(object):
@@ -66,6 +70,7 @@ class Reversi(object):
 
     def get_move_spaces(self, player=None):
         board = self.board
+
         player = self.player if player is None else player
 
         for i in (Reversi.get_move_spaces_worker(board, player)):
@@ -153,17 +158,26 @@ class Reversi(object):
 
 
 def main():
-    state = Reversi(board=[
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 2, 0, 0, 0],
-        [0, 0, 0, 2, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0]
+    # state = Reversi(board=[
+    #     [0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 1, 2, 0, 0, 0],
+    #     [0, 0, 0, 2, 1, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0, 0, 0, 0]
+    #
+    # ], player=2, discs=[60, 2, 2])
 
-    ], player=2, discs=[60, 2, 2])
+    board = []
+    for i in range(SIZE):
+        board.append([0]*SIZE)
+    board[SIZE // 2 - 1][SIZE // 2 - 1] = 1
+    board[SIZE // 2][SIZE // 2 - 1] = 2
+    board[SIZE // 2 - 1][SIZE // 2] = 2
+    board[SIZE // 2][SIZE // 2] = 1
+    state = Reversi(board, player=1, discs=[SIZE**2 - 4, 2, 2])
 
     print(state)
 
@@ -173,20 +187,27 @@ def main():
     # print(state)
 
     root = Tk()
-    canvas = Canvas(root, bg="grey", width=800, height=800)
+    canvas = Canvas(root, bg="grey", width=RES, height=RES)
     canvas.pack()
-    for i in range(8):
-        canvas.create_line(0, 100 * i, 800, 100 * i, fill="black")
-        canvas.create_line(100 * i, 0, 100 * i, 800, fill="black")
+    square_size = RES / SIZE
+    for i in range(SIZE):
+        canvas.create_line(0, square_size * i, RES, square_size * i, fill="black")
+        canvas.create_line(square_size * i, 0, square_size * i, RES, fill="black")
 
     canvas.pack()
 
     def mouse_callback(event):
-        row = event.y / 100
-        column = event.x / 100
-        state.execute((row, column))
+        row = event.y / (RES / SIZE)
+        column = event.x / (RES / SIZE)
+        if not set(state.get_move_spaces()):
+            move = None
+        elif (row, column) not in set(state.get_move_spaces()):
+            return
+        else:
+            move = (row, column)
+        state.execute(move)
         display(state)
-        canvas.create_text(400, 400, text="WAIT", fill="red", font=("Calibri", "250"), tags="text")
+        canvas.create_text(RES / 2, RES / 2, text="WAIT", fill="red", font=("Calibri", "250"), tags="text")
         root.update()
         computer_move = pick_move(state)
         state.execute(computer_move)
@@ -196,15 +217,16 @@ def main():
     def display(state):
         canvas.delete("circles")
         canvas.delete("text")
+        square_size = RES / SIZE
         for i, row in enumerate(state.board):
             for j, val in enumerate(row):
                 if val == 0:
                     spaces = set(state.get_move_spaces())
                     if (i, j) in spaces:
-                        canvas.create_oval(j * 100, i * 100, j * 100 + 100, i * 100 + 100,
+                        canvas.create_oval(j * square_size, i * square_size, j * square_size + square_size, i * square_size + square_size,
                                            dash=(10, 10), tags="circles")
                 else:
-                    canvas.create_oval(j * 100, i * 100, j * 100 + 100, i * 100 + 100,
+                    canvas.create_oval(j * square_size, i * square_size, j * square_size + square_size, i * square_size + square_size,
                                        fill="black" if val == 2 else "white", tags="circles")
 
     canvas.bind("<Button-1>", mouse_callback)
@@ -251,8 +273,8 @@ def pick_move(start):
             cache = out[1]
         depth += 1
     print(len(cache))
-    print(cache[start.hash()])
-    return min(moves, key=lambda x: cache[start.copy().execute(x).hash()])
+    print(cache.get(start.hash(), float("-inf")))
+    return min(moves, key=lambda x: cache.get(start.copy().execute(x).hash(), float("-inf")))
 
 
 if __name__ == '__main__':
