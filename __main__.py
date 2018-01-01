@@ -11,7 +11,7 @@ BLACK = 2
 
 RES = 800
 
-TIME_LIMIT = 1  # seconds
+TIME_LIMIT = 5  # seconds
 
 
 class Reversi(object):
@@ -177,14 +177,14 @@ def main():
     board[SIZE // 2][SIZE // 2 - 1] = 2
     board[SIZE // 2 - 1][SIZE // 2] = 2
     board[SIZE // 2][SIZE // 2] = 1
-    state = Reversi(board, player=1, discs=[SIZE**2 - 4, 2, 2])
+    state = Reversi(board, player=2, discs=[SIZE**2 - 4, 2, 2])
 
     print(state)
 
-    # computer_move = pick_move(state)
-    # state.execute(computer_move)
-    # print(computer_move)
-    # print(state)
+    computer_move = pick_move(state)
+    state.execute(computer_move)
+    print(computer_move)
+    print(state)
 
     root = Tk()
     canvas = Canvas(root, bg="grey", width=RES, height=RES)
